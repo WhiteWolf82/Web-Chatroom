@@ -15,11 +15,11 @@ import java.util.Date;
 
 public class ServerThread extends Thread
 {
-    private static final String USER = "xxx";
-    private static final String PSWD = "xxx";
+	private static final String USER = "xxx";
+	private static final String PSWD = "xxx";
 	
-    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
-    static final String DB_URL = "jdbc:mysql://localhost:3306/WebChatroom?useSSL=false&serverTimezone=UTC";
+	static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
+	static final String DB_URL = "jdbc:mysql://localhost:3306/WebChatroom?useSSL=false&serverTimezone=UTC";
 	
     private ServerMain.Server server;
 	private BufferedReader bufferedReader;
