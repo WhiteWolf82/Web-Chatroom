@@ -15,8 +15,8 @@ import java.util.Date;
 
 public class ServerThread extends Thread
 {
-	private static final String USER = "root";
-	private static final String PSWD = "WLX643204";
+	private static final String USER = "xxx";
+	private static final String PSWD = "xxx";
 	
 	static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
     static final String DB_URL = "jdbc:mysql://localhost:3306/WebChatroom?useSSL=false&serverTimezone=UTC";
