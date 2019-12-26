@@ -15,10 +15,10 @@ import java.util.Date;
 
 public class ServerThread extends Thread
 {
-	private static final String USER = "xxx";
-	private static final String PSWD = "xxx";
+    private static final String USER = "xxx";
+    private static final String PSWD = "xxx";
 	
-	static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
+    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
     static final String DB_URL = "jdbc:mysql://localhost:3306/WebChatroom?useSSL=false&serverTimezone=UTC";
 	
     private ServerMain.Server server;
@@ -27,7 +27,7 @@ public class ServerThread extends Thread
 	private ArrayList<User> userList;
 	private User user;
 	private boolean exitFlag;
-	
+
 	public ServerThread(ServerMain.Server server, User user, ArrayList<User> userList)
 	{
 		this.server = server;
@@ -36,7 +36,7 @@ public class ServerThread extends Thread
 		this.bufferedReader = user.getBufferedReader();
 		this.printWriter = user.getPrintWriter();
 	}
-	
+
 	public void run()
 	{
 		try
@@ -57,12 +57,12 @@ public class ServerThread extends Thread
 			e.printStackTrace();
 		}
 	}
-	
+
 	public ArrayList<User> getUserList()
 	{
 		return userList;
 	}
-	
+
 	/**get the current time*/
 	private String getDatetime()
 	{
@@ -70,19 +70,19 @@ public class ServerThread extends Thread
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return format.format(date);
 	}
-	
+
 	public void addUser(User user)
 	{
 		if (!userList.contains(user))
 			userList.add(user);
 	}
-	
+
 	public void sendToClient(String type, String content)
 	{
 		printWriter.println(type + "##" + content);
 		printWriter.flush(); 
 	}
-	
+
 	private void sendMsgToOthers(String type, String msg)
 	{
 		for (User each : userList)
@@ -94,7 +94,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public void sendHistoryMsg()
 	{
 		Connection conn = null;
@@ -148,7 +148,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public void updateUsername(int userID, String userName)
 	{
 		for (User each : userList)
@@ -160,7 +160,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public void insertMsgToDB(String sender, String content, String sendtime)
 	{
 		Connection conn = null;
@@ -205,7 +205,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public boolean registerUser(String username, String pswd)
 	{
 		Connection conn = null;
@@ -256,7 +256,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public boolean loginUser(String username, String pswd)
 	{
 		Connection conn = null;
@@ -311,7 +311,7 @@ public class ServerThread extends Thread
 			}
 		}
 	}
-	
+
 	public void handleMsg(String msg) throws InterruptedException
 	{
 		String msgType = msg.split("##")[0];
