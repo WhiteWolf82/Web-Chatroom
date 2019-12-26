@@ -21,7 +21,7 @@ public class ServerThread extends Thread
 	static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";  
 	static final String DB_URL = "jdbc:mysql://localhost:3306/WebChatroom?useSSL=false&serverTimezone=UTC";
 	
-    private ServerMain.Server server;
+	private ServerMain.Server server;
 	private BufferedReader bufferedReader;
 	private PrintWriter printWriter;
 	private ArrayList<User> userList;
