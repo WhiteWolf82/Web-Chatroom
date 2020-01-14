@@ -46,6 +46,7 @@ public class ClientThread extends Thread
 		
 	}
 	
+	//handling the message from the server
 	public void handleMsg(String msg)
 	{
 		String msgType = msg.split("##")[0];
@@ -59,6 +60,7 @@ public class ClientThread extends Thread
 			client.registerFail(client.getChildFrame());;
 			break;
 		case "LOGINSUCCESS":
+			//get username from the message
 			String username = msg.split("##")[1];
 			client.loginSuccess(username);
 			client.addUser(username);
@@ -116,6 +118,30 @@ public class ClientThread extends Thread
 			break;
 		case "EXIT":
 			client.exitLogin(msg.split("##")[1]);
+			break;
+		case "CHAT":
+			String chatUsername = msg.split("##")[1];
+			client.newP2PChat(chatUsername);
+			break;
+		case "P2PMSG":
+			String sendUsername = msg.split("##")[1];
+			String msgContent = msg.split("##")[2];
+			String msgTime = msg.split("##")[3];
+			client.addP2PMsg(sendUsername, msgContent, msgTime);
+			break;
+		case "EXITP2P":
+			String exitUsername = msg.split("##")[1];
+			client.delP2PChat(exitUsername);
+			break;
+		case "P2PHISTORY":
+			ArrayList<String> p2pMsgs = new ArrayList<>();
+			String counterUsername = msg.split("##")[1];
+			//the first one is msgType and the second one is username, so eliminate
+			for (int i = 2; i < msg.split("##").length; i++)
+			{
+				p2pMsgs.add(msg.split("##")[i]);
+			}
+			client.showP2PHistoryMsg(p2pMsgs, counterUsername);
 			break;
 		default:
 			break;
