@@ -33,6 +33,7 @@ public class ServerMain
 			}
 		}
 		
+		//listen to the connection requests from clients
 		public void startListen() throws IOException
 		{
 			while(true)
@@ -41,6 +42,7 @@ public class ServerMain
 				String defaultUsername = "User" + Integer.toString(clientCnt);
 				User newUser = new User(defaultUsername, clientCnt, socket);
 				//allUserList.add(newUser);
+				//create a thread to handle messages from this client
 				ServerThread serverThread = new ServerThread(this, newUser, allUserList);
 				serverThread.start();
 				allThreads.add(serverThread);
@@ -58,6 +60,7 @@ public class ServerMain
 		{
 			if (!allUserList.contains(user))
 				allUserList.add(user);
+			//let all the other threads know
 			for (ServerThread thread : allThreads)
 			{
 				thread.addUser(user);
@@ -68,6 +71,7 @@ public class ServerMain
 			}*/
 		}
 		
+		/**delete a user since it has disconnected*/
 		public synchronized void delUser(String userName)
 		{
 			int delUserID = -1;
@@ -79,8 +83,9 @@ public class ServerMain
 					break;
 				}
 			}
-			if (delUserID != -1)
+			if (delUserID != -1)	//if found the user
 			{
+				//update the other users' ID
 				for (int i = delUserID + 1; i < allUserList.size(); i++)
 				{
 					allUserList.get(i).setUserID(allUserList.get(i).getUserID() - 1);
@@ -94,6 +99,7 @@ public class ServerMain
 			}
 		}
 		
+		/**remove the deleted user's thread*/
 		public synchronized void removeThread(long threadID)
 		{
 			for (ServerThread thread : allThreads)
