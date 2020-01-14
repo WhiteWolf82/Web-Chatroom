@@ -6,6 +6,8 @@ import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -47,22 +49,28 @@ public class Client implements ActionListener
 	private BufferedReader bufferedReader;
 	private PrintWriter printWriter;
 	DefaultListModel<String> userListModel;
+	private ArrayList<PrivateChat> chatUsers;
 	
 	private boolean isLogin = false;
 	private boolean isConnect = false;
+	
+	private String userName;
 	
 	/**constructor function*/
 	public Client()
 	{
 		userArrayList = new ArrayList<>();
+		chatUsers = new ArrayList<>();
 		initialize();
 	}
 	
+	/**get the main frame*/
 	public JFrame getFrame()
 	{
 		return frame;
 	}
 	
+	/**get the child frame*/
 	public JFrame getChildFrame()
 	{
 		return childFrame;
@@ -76,6 +84,7 @@ public class Client implements ActionListener
 			Socket socket = new Socket(host, port);
 			bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			printWriter = new PrintWriter(socket.getOutputStream());
+			//create a thread for the client
 			ClientThread clientThread = new ClientThread(socket, this);
 			clientThread.start();
 			return true;
@@ -87,16 +96,10 @@ public class Client implements ActionListener
 		}
 	}
 	
+	/**disconnect to server*/
 	public void disconnect()
 	{
-		/*isConnect = false;
-		hostLabel.setVisible(true);
-		hostTextField.setVisible(true);
-		portLabel.setVisible(true);
-		portTextField.setVisible(true);
-		connectButton.setVisible(true);
-		connectLabel.setVisible(false);
-		disconnectButton.setVisible(false);*/
+		//close the frame and release resources
 		frame.dispose();
 		System.exit(0);
 	}
@@ -110,16 +113,18 @@ public class Client implements ActionListener
 		JPanel bottomPanel = new JPanel();
 		JPanel leftPanel = new JPanel();
 		
+		//set default values for the frame
 		frame.setBounds(200, 40, 1024, 768);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setContentPane(panel);
 		frame.setLayout(new BorderLayout());
 		
+		//set layout managers for the panels
 		upPanel.setLayout(new FlowLayout());
 		bottomPanel.setLayout(new GridBagLayout());
 		leftPanel.setLayout(new GridBagLayout());
 		leftPanel.setPreferredSize(new Dimension(150, 0));
 		
+		//initialize the text/pswd fields
 		hostTextField = new JTextField("127.0.0.1");
 		portTextField = new JTextField("3226");
 		nameTextField = new JTextField();
@@ -129,6 +134,7 @@ public class Client implements ActionListener
 		nameTextField.setPreferredSize(new Dimension(150, 25));
 		pswdField.setPreferredSize(new Dimension(150, 25));
 		
+		//initialize the labels
 		hostLabel = new JLabel("Host:");
 		portLabel = new JLabel("Port:");
 		nameLabel = new JLabel("Username:");
@@ -138,6 +144,7 @@ public class Client implements ActionListener
 		connectLabel = new JLabel();
 		connectLabel.setVisible(false); 	//only be visible after connecting
 		
+		//initialize the buttons
 		connectButton = new JButton("Connect");
 		disconnectButton = new JButton("Disconnect");
 		disconnectButton.setVisible(false); 	//only be visible after connecting
@@ -146,6 +153,7 @@ public class Client implements ActionListener
 		exitButton = new JButton("Exit");
 		exitButton.setVisible(false); 	//only be visible after login
 		
+		//add components to upPanel
 		upPanel.add(connectLabel);
 		upPanel.add(disconnectButton);
 		upPanel.add(hostLabel);
@@ -174,9 +182,11 @@ public class Client implements ActionListener
 		
 		userListModel = new DefaultListModel<>();
 		userList = new JList<>(userListModel);
+		userList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);	//only allow selecting one user at a time
 		
 		JScrollPane userListPane = new JScrollPane(userList);
 		
+		//add components to leftPanel
 		leftPanel.add(userLabel, new GridBagConstraints(0, 0, 1, 1, 1, 1, 
 			    GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 		leftPanel.add(chatButton, new GridBagConstraints(0, 1, 1, 1, 1, 1, 
@@ -207,8 +217,17 @@ public class Client implements ActionListener
 		chatButton.addActionListener(this);
 		
 		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		//closing the frame is equal to disconnecting
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e)
+			{
+				sendToServer("DISCONNECT", "");
+			}
+		});
 	}
 	
+	/**send message to the server*/
 	public void sendToServer(String type, String content)
 	{
 		printWriter.println(type + "##" + content);
@@ -230,6 +249,7 @@ public class Client implements ActionListener
 		case "Connect":
 			if (connect(host, Integer.parseInt(port)))
 			{
+				//if connected, update the upPanel
 				isConnect = true;
 				hostLabel.setVisible(false);
 				hostTextField.setVisible(false);
@@ -250,9 +270,10 @@ public class Client implements ActionListener
 			}
 			break;
 		case "Disconnect":
-			sendToServer("DISCONNECT", username);
+			sendToServer("DISCONNECT", "");
 			break;
 		case "Login":
+			//has to connect first
 			if (!isConnect)
 			{
 				JOptionPane.showMessageDialog(frame, 
@@ -261,6 +282,7 @@ public class Client implements ActionListener
 						JOptionPane.WARNING_MESSAGE);
 				break;
 			}
+			//check whether the input values are valid
 			if (username.length() == 0 || pswd.length() == 0)
 			{
 				JOptionPane.showMessageDialog(frame, 
@@ -272,6 +294,7 @@ public class Client implements ActionListener
 			sendToServer("LOGIN", username + "##" + pswd);
 			break;
 		case "Register":
+			//has to connect first
 			if (!isConnect)
 			{
 				JOptionPane.showMessageDialog(frame, 
@@ -280,6 +303,7 @@ public class Client implements ActionListener
 						JOptionPane.WARNING_MESSAGE);
 				break;
 			}
+			//open a child frame to register
 			ClientRegister clientRegister = new ClientRegister(frame);
 			childFrame = clientRegister.getFrame();
 			break;
@@ -291,21 +315,70 @@ public class Client implements ActionListener
 			sendToServer("EXIT", "");
 			break;
 		case "Chat":
-			//todo
+			String chatUserName = userList.getSelectedValue();
+			//test whether the selected username is valid
+			if (chatUserName.equals(username))
+			{
+				JOptionPane.showMessageDialog(frame, 
+						"Cannot chat with yourself!",
+						"Warning",
+						JOptionPane.WARNING_MESSAGE);
+				break;
+			}
+			boolean tmpFlag = false;
+			for (PrivateChat each : chatUsers)
+			{
+				if (each.getChatUserName().equals(chatUserName))
+				{
+					JOptionPane.showMessageDialog(frame, 
+							"You're already chatting with this user!",
+							"Warning",
+							JOptionPane.WARNING_MESSAGE);
+					tmpFlag = true;
+					break;
+				}
+			}
+			if (tmpFlag == true)
+			{
+				break;
+			}
+			//if valid, send to server
+			sendToServer("CHAT", chatUserName);
+			PrivateChat privateChat = new PrivateChat(frame, chatUserName);
+			chatUsers.add(privateChat);
 			break;
 		default:
 			break;
 		}
 	}
 	
+	public void registerSuccess(JFrame registerFrame)
+	{
+		JOptionPane.showMessageDialog(registerFrame, 
+				"Register succeed!",
+				"Succeed",
+				JOptionPane.INFORMATION_MESSAGE);
+		registerFrame.dispose();
+	}
+	
+	public void registerFail(JFrame registerFrame)
+	{
+		JOptionPane.showMessageDialog(registerFrame, 
+				"Username exists!",
+				"Fail",
+				JOptionPane.WARNING_MESSAGE);
+	}
+	
 	public void loginSuccess(String username)
 	{
+		//ask the server for the current user list
 		sendToServer("USERLIST", "");
 		isLogin = true;
 		JOptionPane.showMessageDialog(frame, 
 				"Login succeed!",
 				"Succeed",
 				JOptionPane.INFORMATION_MESSAGE);
+		//update the up panel
 		nameLabel.setVisible(false);
 		nameTextField.setVisible(false);
 		pswdLabel.setVisible(false);
@@ -315,6 +388,7 @@ public class Client implements ActionListener
 		welcomeLabel.setText("                Welcome, " + username + "                ");
 		welcomeLabel.setVisible(true);
 		exitButton.setVisible(true);
+		this.userName = username;
 	}
 	
 	public void loginFail()
@@ -335,7 +409,7 @@ public class Client implements ActionListener
 	}
 	
 	/**insert a new message to the text area*/
-	private void insertMsg(JScrollPane scrollPane, JTextPane textPane, String title, String content)
+	private void insertMsg(JScrollBar scrollBar, JTextPane textPane, String title, String content)
 	{
 		StyledDocument doc = textPane.getStyledDocument();
 		//title attributes
@@ -357,7 +431,7 @@ public class Client implements ActionListener
 		{
 			e.printStackTrace();
 		}
-		msgScrollBar.setValue(msgScrollBar.getMaximum());
+		scrollBar.setValue(scrollBar.getMaximum());
 	}
 	
 	/**add a new user*/
@@ -369,7 +443,7 @@ public class Client implements ActionListener
 			System.out.println(username + " came.");
 			userArrayList.add(username);
 			userListModel.addElement(username);
-			insertMsg(msgScrollPane, showMsgTextPane, "Server (" + getDatetime() + "):", username +
+			insertMsg(msgScrollBar, showMsgTextPane, "Server (" + getDatetime() + "):", username +
 					" has entered the chatroom.");
 			userLabel.setText("Online (" + userArrayList.size() + "):");
 			System.out.println("Current users: " + Integer.toString(userArrayList.size()));
@@ -383,7 +457,7 @@ public class Client implements ActionListener
 		{
 			userArrayList.remove(username);
 			userListModel.removeElement(username);
-			insertMsg(msgScrollPane, showMsgTextPane, "Server (" + getDatetime() + "):", username +
+			insertMsg(msgScrollBar, showMsgTextPane, "Server (" + getDatetime() + "):", username +
 					" has leaved the chatroom.");
 			userLabel.setText("Online (" + userArrayList.size() + "):");
 		}
@@ -407,33 +481,16 @@ public class Client implements ActionListener
 			String content = msgList.get(i).split("[**]")[0];
 			String sender = msgList.get(i).split("[**]")[2];
 			String sendTime = msgList.get(i).split("[**]")[4];
-			insertMsg(msgScrollPane, showMsgTextPane, sender + " (" + sendTime + "):", content);
+			insertMsg(msgScrollBar, showMsgTextPane, sender + " (" + sendTime + "):", content);
 		}
-		insertMsg(msgScrollPane, showMsgTextPane, 
+		insertMsg(msgScrollBar, showMsgTextPane, 
 				"[Above are histroy messages (only show the last 10 messages)]", "");
 	}
 	
 	/** interface of insertMsg for ClientThread*/
 	public void addMsg(String sender, String content, String sendtime)
 	{
-		insertMsg(msgScrollPane, showMsgTextPane, sender + "( " + sendtime + "):", content);
-	}
-	
-	public void registerSuccess(JFrame registerFrame)
-	{
-		JOptionPane.showMessageDialog(registerFrame, 
-				"Register succeed!",
-				"Succeed",
-				JOptionPane.INFORMATION_MESSAGE);
-		registerFrame.dispose();
-	}
-	
-	public void registerFail(JFrame registerFrame)
-	{
-		JOptionPane.showMessageDialog(registerFrame, 
-				"Username exists!",
-				"Fail",
-				JOptionPane.WARNING_MESSAGE);
+		insertMsg(msgScrollBar, showMsgTextPane, sender + " (" + sendtime + "):", content);
 	}
 	
 	public void exitLogin(String username)
@@ -452,6 +509,71 @@ public class Client implements ActionListener
 		userListModel.clear();
 	}
 	
+	/**create a new frame for private chat*/
+	public void newP2PChat(String chatUsername)
+	{
+		PrivateChat privateChat = new PrivateChat(frame, chatUsername);
+		chatUsers.add(privateChat);
+	}
+	
+	/**add p2p message to that exact frame*/
+	public void addP2PMsg(String sender, String content, String sendtime)
+	{
+		for (PrivateChat each : chatUsers)
+		{
+			//find that frame and insert message to its text pane
+			if (each.getChatUserName().equals(sender))
+			{
+				insertMsg(each.getScrollBar(), each.getTextPane(), sender + " (" + sendtime + "):", content);
+				break;
+			}
+		}
+	}
+	
+	/** show p2p history messages*/
+	public void showP2PHistoryMsg(ArrayList<String> msgList, String counterUsername)
+	{	
+		//find that frame and insert history messages to its text pane
+		PrivateChat counterUser = null;
+		for (PrivateChat each : chatUsers)
+		{
+			if (each.getChatUserName().equals(counterUsername))
+			{
+				counterUser = each;
+				break;
+			}
+		}
+		for (int i = 0; i < msgList.size(); i++)
+		{
+			String content = msgList.get(i).split("[**]")[0];
+			String sender = msgList.get(i).split("[**]")[2];
+			String sendTime = msgList.get(i).split("[**]")[4];
+			insertMsg(counterUser.getScrollBar(), counterUser.getTextPane(), sender + " (" + sendTime + "):", content);
+		}
+		insertMsg(counterUser.getScrollBar(), counterUser.getTextPane(), 
+				"[Above are histroy messages (only show the last 10 messages)]", "");
+	}
+	
+	/**delete the p2p frame*/
+	public void delP2PChat(String exitName)
+	{
+		for (PrivateChat each : chatUsers)
+		{
+			//find that frame and close it
+			if (each.getChatUserName().equals(exitName))
+			{
+				JOptionPane.showMessageDialog(each.getFrame(), 
+						"The user has left the private chatroom!",
+						"Exit",
+						JOptionPane.INFORMATION_MESSAGE);
+				each.exitChat();
+				chatUsers.remove(each);
+				break;
+			}
+		}
+	}
+	
+	/**class for registering*/
 	public class ClientRegister implements ActionListener
 	{	
 		private JFrame registerFrame;
@@ -471,6 +593,7 @@ public class Client implements ActionListener
 		
 		public ClientRegister(JFrame mainFrame)
 		{
+			//initialize frame and panel
 			registerFrame = new JFrame("Register");
 			panel = new JPanel();
 			panel.setLayout(null);
@@ -481,17 +604,20 @@ public class Client implements ActionListener
 			registerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			registerFrame.setContentPane(panel);
 			
+			//initialize labels
 			noteLabel = new JLabel("NOTE:");
 			noteLabel1 = new JLabel("Username can only start with a character.");
 			noteLabel2 = new JLabel("Password must be at least six characters long.");
 			userLabel = new JLabel("Username:");
 			pswdLabel = new JLabel("Password:");
 			
+			//initialize fields
 			userTextField = new JTextField();
 			pswdField = new JPasswordField();
 			
 			JButton registerBtn = new JButton("Register");
 			
+			//add components to the panel
 			noteLabel.setForeground(Color.red);
 			noteLabel.setBounds(80, 10, 65, 10);
 			panel.add(noteLabel);
@@ -557,6 +683,128 @@ public class Client implements ActionListener
 				{
 					sendToServer("REGISTER", username + "##" + pswd);
 				}
+			}
+		}
+	}
+	
+	/**class for private chatting*/
+	public class PrivateChat implements ActionListener
+	{
+		private JFrame privateChatFrame;
+		private String recvUser;
+		private JTextField sendMsgTextField = new JTextField();
+		private JTextPane showMsgTextPane;
+		private JScrollPane msgScrollPane;
+		private JScrollBar msgScrollBar;
+		
+		public PrivateChat(JFrame mainFrame, String recver)
+		{
+			this.recvUser = recver;
+			
+			//define components
+			JPanel panel = new JPanel();
+			JPanel upPanel = new JPanel();
+			JPanel bottomPanel = new JPanel();
+			JLabel upLabel = new JLabel("You are chatting with " + recvUser + ".");
+			JButton sendButton = new JButton("Send");
+			JButton exitButton = new JButton("Exit");
+			
+			//initialize the frame
+			privateChatFrame = new JFrame("Private Chatroom");
+			privateChatFrame.setSize(800, 600);
+			privateChatFrame.setContentPane(panel);
+			privateChatFrame.setLayout(new BorderLayout());
+			privateChatFrame.setResizable(false);
+			privateChatFrame.setLocationRelativeTo(mainFrame);
+			
+			showMsgTextPane = new JTextPane();
+			msgScrollPane = new JScrollPane();
+			msgScrollBar = new JScrollBar(JScrollBar.VERTICAL);
+			
+			//initialize panels
+			upPanel.setLayout(new FlowLayout());
+			bottomPanel.setLayout(new GridBagLayout());
+			
+			//add components to panels
+			upPanel.add(upLabel);
+			upPanel.add(exitButton);
+			bottomPanel.add(sendMsgTextField, new GridBagConstraints(0, 0, 1, 1, 100, 100, 
+				    GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
+			bottomPanel.add(sendButton, new GridBagConstraints(2, 0, 1, 1, 1.0, 1.0, 
+				    GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
+			
+			showMsgTextPane.setEditable(false);
+			msgScrollPane.setViewportView(showMsgTextPane);
+			msgScrollBar.setAutoscrolls(true);
+			msgScrollPane.setVerticalScrollBar(msgScrollBar);
+			
+			panel.add(upPanel, "North");
+			panel.add(bottomPanel, "South");
+			panel.add(msgScrollPane, "Center");
+			
+			sendButton.addActionListener(this);
+			exitButton.addActionListener(this);
+			
+			privateChatFrame.setVisible(true);
+			privateChatFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			//closing the frame is equal to exit
+			privateChatFrame.addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e)
+				{
+					sendToServer("EXITP2P", recvUser);
+					exitChat();
+				}
+			});
+		}
+		
+		public JFrame getFrame()
+		{
+			return this.privateChatFrame;
+		}
+		
+		public String getChatUserName()
+		{
+			return this.recvUser;
+		}
+		
+		public JTextPane getTextPane()
+		{
+			return this.showMsgTextPane;
+		}
+		
+		public JScrollBar getScrollBar()
+		{
+			return this.msgScrollBar;
+		}
+		
+		public void exitChat()
+		{
+			//close the frame and release resources
+			privateChatFrame.dispose();
+		}
+		
+		public void actionPerformed(ActionEvent e)
+		{
+			if (e.getActionCommand() == "Send")
+			{
+				String sendMsg = this.sendMsgTextField.getText();
+				sendToServer("P2PMSG", recvUser + "##" + sendMsg);
+				this.sendMsgTextField.setText(null);
+				insertMsg(msgScrollBar, showMsgTextPane, userName + " (" + getDatetime() + "):", sendMsg);
+			}
+			else if (e.getActionCommand() == "Exit")
+			{
+				sendToServer("EXITP2P", recvUser);
+				for (PrivateChat each : chatUsers)
+				{
+					//find that user and remove it from the list
+					if (each.getChatUserName().equals(recvUser))
+					{
+						chatUsers.remove(each);
+						break;
+					}
+				}
+				exitChat();
 			}
 		}
 	}
